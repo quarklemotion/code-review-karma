@@ -10,7 +10,6 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@octokit/rest": "^16.1.0",
-    "fs": "^0.0.1-security"
+    "@octokit/rest": "^16.1.0"
   }
 }

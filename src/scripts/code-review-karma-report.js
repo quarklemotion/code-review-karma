@@ -71,11 +71,13 @@ async function paginate(method, queryProperties = {}) {
   }
 
   try {
-    apiRequestCount += 1;
     const options = method.endpoint.merge(queryObject)
     const data = await octokit.paginate(
       options,
-      response => (method === octokit.search.issues) ? response.data.items : response.data
+      (response) => {
+        apiRequestCount += 1;
+        return (method === octokit.search.issues) ? response.data.items : response.data
+      }
     );
     return data;
   } catch(e) {
@@ -110,27 +112,32 @@ const reviewerKarmaScores = {};
  * @param {Array(Object)} karmaPerPullRequestMaps 
  */
 function generateReport(karmaPerPullRequestMaps) {
-  const reviewersCountText = withColor(Object.keys(reviewerKarmaScores).length, 'magenta');
+  const reviewersCount = Object.keys(reviewerKarmaScores).length;
+  const reviewersCountText = withColor(reviewersCount, 'magenta');
   const daysCountText = withColor(DAYS_TO_SEARCH.toString(), 'magenta');
   console.log(`Preparing code review karma report (${reviewersCountText} team reviewers over ${daysCountText} days) ...`);
   const sortableKarmaScores = [];
+  let sumOfAllScores = 0;
   for (const reviewer in reviewerKarmaScores) {
     sortableKarmaScores.push([reviewer, reviewerKarmaScores[reviewer]]);
+    sumOfAllScores += reviewerKarmaScores[reviewer];
   }
+  const averageScore = Math.trunc(sumOfAllScores / reviewersCount);
   const longestReviewer = Math.max(12, ...sortableKarmaScores.map(karmaScore => karmaScore[0].length));
   const longestScore = Math.max(...sortableKarmaScores.map(karmaScore => karmaScore[1].toString().length));
   sortableKarmaScores.sort((a, b) => b[1] - a[1]);
-  const horizontalRule = `--${''.padEnd(longestReviewer, '-')}----------------`;
+  const horizontalRule = `--${''.padEnd(longestReviewer, '-')}----------------------------`;
   console.log(horizontalRule);
-  console.log(`| ${withColor('Reviewer'.padEnd(longestReviewer), 'cyan')} | ${withColor('Karma Score', 'cyan')} |`);
+  console.log(`| ${withColor('Reviewer'.padEnd(longestReviewer), 'cyan')} | ${withColor('Karma Score', 'cyan')} | ${withColor('% of Avg.', 'cyan')} |`);
   console.log(horizontalRule);
   sortableKarmaScores.forEach(([reviewer, karmaScore]) => {
     const reviewerText = withColor(reviewer.padEnd(longestReviewer), 'green');
     const scoreText = withColor(karmaScore.toString().padStart(longestScore + 7), 'yellow');
-    console.log(`| ${reviewerText} | ${scoreText} |`);
+    const percentText = withColor(Math.trunc(100 * karmaScore / averageScore).toString().padStart(9), 'yellow');
+    console.log(`| ${reviewerText} | ${scoreText} | ${percentText} |`);
   })
   console.log(horizontalRule);
-  // console.log(`[DEBUG] Issued ${withColor(apiRequestCount, 'magenta')} github API requests`);
+  // console.log(`[DEBUG] Issued ${withColor(apiRequestCount, 'magenta')} github API requests, average score = ${averageScore}`);
 }
 
 async function main() {

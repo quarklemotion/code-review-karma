@@ -1,5 +1,4 @@
 const octokit = require('@octokit/rest')();
-const fs = require('fs');
 
 /*
  * This script uses the github API to inspect recently merged frontend pull requests
@@ -12,7 +11,6 @@ const fs = require('fs');
 const KARMA_PER_REVIEW = 50; // karma each user gets per review
 const ORG_NAME = 'optimizely';
 const TEAM_NAMES = 'Frontend,ui-engineers'; // team names to do karma analysis for
-const REPOSITORIES = 'optimizely,oui,experimentengine,optly-components';
 const DAYS_TO_SEARCH = 30;
 
 const colors = {
@@ -181,10 +179,24 @@ async function main() {
     reviewerKarmaScores[reviewer] = 0;
   });
 
+  // get repositories associated with github teams(s)
+  const teamRepositories = shallowFlatten(
+    await Promise.all(teamIds.map(async (teamId) => {
+      console.log(`Fetching ${withColor(teams.find(team => team.id === teamId).name, 'cyan')} team repositories ...`);
+      return await paginate(
+        octokit.teams.listRepos,
+        {
+          team_id: teamId,
+          org: ORG_NAME,
+        },
+      );
+    }))
+  ).map(repository => repository.name);
+
   const delayPromises = [];
 
   // fetch pull request data for each repository
-  const repoPromises = REPOSITORIES.split(',').map(async (repository, repoIndex) => {
+  const repoPromises = teamRepositories.map(async (repository, repoIndex) => {
     console.log(`Fetching pull requests for repository ${withColor(repository, 'cyan')} ...`);
 
     const pullRequests = await paginate(

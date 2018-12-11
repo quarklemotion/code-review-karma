@@ -9,6 +9,7 @@ const octokit = require('@octokit/rest')();
  * >node ./src/scripts/code-review-karma-report.js
  */
 const KARMA_PER_REVIEW = 50; // karma each user gets per review
+const KARMA_PERCENT_PER_COMMENT = 30; // percentage of added lines karma given to PR commenters
 const ORG_NAME = 'optimizely';
 const TEAM_NAMES = 'Frontend,ui-engineers'; // team names to do karma analysis for
 const DAYS_TO_SEARCH = 30;
@@ -223,6 +224,8 @@ async function main() {
           paginate(octokit.pullRequests.listFiles, prQuery),
           // API request to fetch reviews for this pull request
           paginate(octokit.pullRequests.listReviews, prQuery),
+          // Save a reference to the pull request author
+          Promise.resolve(pullRequest.user.login),
         ];
       })();
       delayPromises.push(delayPromise);
@@ -232,23 +235,39 @@ async function main() {
   });
 
   await Promise.all(repoPromises);
-  const promisePairs = await Promise.all(delayPromises);
+  const promiseArrays = await Promise.all(delayPromises);
 
   // Process each pull request for per-user code review karma
-  const karmaPerPullRequestMaps = await Promise.all(promisePairs.map(async (promisePair) => {
-    const [files, reviews] = await Promise.all(promisePair);
+  const karmaPerPullRequestMaps = await Promise.all(promiseArrays.map(async (promiseArray) => {
+    const [files, reviews, author] = await Promise.all(promiseArray);
     const additionsReducer = (acc, file) => (acc + file.additions);
     const additionsKarma = filterFiles(files).reduce(additionsReducer, 0);
     const approvingReviewers = reviews
-      .filter(review => review.state === 'APPROVED') // only credit reviewers that actually approved the PR
+      .filter(review => review.state === 'APPROVED') // reviewers that actually approved the PR
       .map(review => review.user.login)  // map the reviews to the reviewers' github account names
       .filter(uniqueFilter) // eliminate duplicate reviewers (if same user reviewed the PR mutiple times)
       .filter(reviewer => teamUserLogins.includes(reviewer)); // only consider reviews from users in the team we are analyzing
+
+    const commentingReviewers = reviews
+      .filter(review => review.state !== 'APPROVED') // reviewers that commented on the PR
+      .map(review => review.user.login)  // map the reviews to the reviewers' github account names
+      .filter(uniqueFilter) // eliminate duplicate reviewers (if same user reviewed the PR mutiple times)
+      .filter(
+        reviewer =>
+          teamUserLogins.includes(reviewer) && // only consider reviews from users in the team we are analyzing
+          !approvingReviewers.includes(reviewer) && // discard comment reviews from an approving reviewer
+          reviewer !== author // exclude comments made by the PR author
+      );
 
     // determine karma scores for this PR
     approvingReviewers.forEach((reviewer) => {
       const currentKarma = reviewerKarmaScores[reviewer] || 0;
       const updatedKarma = currentKarma + KARMA_PER_REVIEW + additionsKarma;
+      reviewerKarmaScores[reviewer] = updatedKarma;
+    });
+    commentingReviewers.forEach((reviewer) => {
+      const currentKarma = reviewerKarmaScores[reviewer] || 0;
+      const updatedKarma = currentKarma + Math.trunc((KARMA_PERCENT_PER_COMMENT / 100) * additionsKarma);
       reviewerKarmaScores[reviewer] = updatedKarma;
     });
 

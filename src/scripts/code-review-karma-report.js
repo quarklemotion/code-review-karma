@@ -6,7 +6,6 @@ const fs = require('fs');
  * to determine the percentage of these pull requests that touch Vue components.
  *
  * Usage:
- * >git pull
  * >export GITHUB_ACCESS_TOKEN=xyz123
  * >node ./src/scripts/code-review-karma-report.js
  */
@@ -73,17 +72,19 @@ async function paginate(method, queryProperties = {}) {
 
   try {
     apiRequestCount += 1;
-    let response = await method(queryObject);
-    let data = (method === octokit.search.issues) ? response.data.items : response.data;
-    while (octokit.hasNextPage(response)) {
-      apiRequestCount += 1;
-      response = await octokit.getNextPage(response);
-      data = data.concat((method === octokit.search.issues) ? response.data.items : response.data);
-    }
+    const options = method.endpoint.merge(queryObject)
+    const data = await octokit.paginate(
+      options,
+      response => (method === octokit.search.issues) ? response.data.items : response.data
+    );
     return data;
   } catch(e) {
-    if (e.message && e.message.documentation_url.includes('abuse-rate-limits')) {
-      console.log('Use of this script has triggered Github\'s abuse detection mechanism due to too many API requests being sent. Please wait a few minutes and try again.');
+    if (e.message) {
+      if (e.message.documentation_url && e.message.documentation_url.includes('abuse-rate-limits')) {
+        console.log('Use of this script has triggered Github\'s abuse detection mechanism due to too many API requests being sent. Please wait a few minutes and try again.');        
+      } else {
+        console.log(`Github Error: ${e.message}`);
+      }
       process.exit(1);
     }
   }
@@ -145,7 +146,7 @@ async function main() {
 
   console.log(`Fetching all ${withColor(ORG_NAME, 'cyan')} org teams ...`);
   const teams = await paginate(
-    octokit.orgs.getTeams,
+    octokit.teams.list,
     { org: ORG_NAME },
   );
 
@@ -155,7 +156,7 @@ async function main() {
   const usersPerTeamList = await Promise.all(teamIds.map(async (teamId) => {
     console.log(`Fetching ${withColor(teams.find(team => team.id === teamId).name, 'cyan')} team users ...`);
     return await paginate(
-      octokit.orgs.getTeamMembers,
+      octokit.teams.listMembers,
       {
         team_id: teamId,
         org: ORG_NAME,
@@ -199,9 +200,9 @@ async function main() {
         };
         return [
           // API request to fetch file details for this pull request
-          paginate(octokit.pullRequests.getFiles, prQuery),
+          paginate(octokit.pullRequests.listFiles, prQuery),
           // API request to fetch reviews for this pull request
-          paginate(octokit.pullRequests.getReviews, prQuery),
+          paginate(octokit.pullRequests.listReviews, prQuery),
         ];
       })();
       delayPromises.push(delayPromise);

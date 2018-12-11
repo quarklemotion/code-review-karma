@@ -191,7 +191,8 @@ async function main() {
         },
       );
     }))
-  ).map(repository => repository.name);
+  ).map(repository => repository.name)
+    .filter(uniqueFilter);
 
   const delayPromises = [];
 

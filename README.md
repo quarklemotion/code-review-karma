@@ -26,6 +26,9 @@ export GITHUB_TEAMS=team1,team2
 node ./src/scripts/code-review-karma-report.js
 ```
 
+Sample output:
+![sample script output](src/images/sample_command_line_output.png)
+
 ## Slack Integration
 
 ... coming soon!

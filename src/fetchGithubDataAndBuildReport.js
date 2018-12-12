@@ -87,12 +87,12 @@ async function fetchGithubDataAndBuildReport({
   logger,
   githubOrg,
   githubTeams,
-  daysToSearch,
+  daysToReport,
   karmaPerReview,
   karmaPercentPerComment
 }) {
   const mergedSinceDate = new Date();
-  mergedSinceDate.setDate(mergedSinceDate.getDate() - daysToSearch);
+  mergedSinceDate.setDate(mergedSinceDate.getDate() - daysToReport);
 
   octokit.authenticate({
     type: 'oauth',

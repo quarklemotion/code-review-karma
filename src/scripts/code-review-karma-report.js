@@ -13,7 +13,7 @@ const fetchGithubDataAndBuildReport = require('../fetchGithubDataAndBuildReport'
  */
 const KARMA_PER_REVIEW = 50; // karma each user gets per review
 const KARMA_PERCENT_PER_COMMENT = 25; // percentage of added lines karma given to PR commenters
-const DAYS_TO_SEARCH = 30;
+const DAYS_TO_REPORT = 30; // can override using `export DAYS_TO_REPORT=7`
 
 const colors = {
   red: '\x1b[31m',
@@ -79,17 +79,19 @@ const teams = withColor(process.env.GITHUB_TEAMS.split(',').join(', '), 'cyan');
 const organization = withColor(process.env.GITHUB_ORG, 'cyan');
 console.log(`Calculating Code Review Karma report for team(s): ${teams} in the ${organization} github org ...`)
 
+const daysToReport = process.env.DAYS_TO_REPORT ? Number(process.env.DAYS_TO_REPORT) : DAYS_TO_REPORT;
+
 // kick off the main function to fetch data from github and generate the code review karma report
 fetchGithubDataAndBuildReport({
   githubAccessToken: process.env.GITHUB_ACCESS_TOKEN,
   logger: console.log,
   githubOrg: process.env.GITHUB_ORG,
   githubTeams: process.env.GITHUB_TEAMS,
-  daysToSearch: DAYS_TO_SEARCH,
+  daysToReport,
   karmaPerReview: KARMA_PER_REVIEW,
   karmaPercentPerComment: KARMA_PERCENT_PER_COMMENT,
 }).then(([karmaReportData, statistics]) => {
-  console.log(`Code Review Karma report based on ${withColor(statistics.pullRequestCount, 'cyan')} reviewed pull requests over ${withColor(DAYS_TO_SEARCH, 'cyan')} days.`)
+  console.log(`Code Review Karma report based on ${withColor(statistics.pullRequestCount, 'cyan')} reviewed pull requests over the past ${withColor(daysToReport, 'cyan')} days.`)
   // display the karma report to the console
   displayConsoleReport(karmaReportData);
 });

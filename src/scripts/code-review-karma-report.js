@@ -1,17 +1,18 @@
 const fetchGithubDataAndBuildReport = require('../fetchGithubDataAndBuildReport');
 
 /*
- * This script uses the github API to inspect recently merged frontend pull requests
- * to determine the percentage of these pull requests that touch Vue components.
+ * This script uses the github API to inspect recently merged and reviewed pull requests
+ * to generate a report showing the `Code Review Karma` score for each member of the
+ * github team.
  *
  * Usage:
  * >export GITHUB_ACCESS_TOKEN=xyz123
+ * >export GITHUB_ORG=myOrg
+ * >export GITHUB_TEAMS=team1,team2
  * >node ./src/scripts/code-review-karma-report.js
  */
 const KARMA_PER_REVIEW = 50; // karma each user gets per review
-const KARMA_PERCENT_PER_COMMENT = 30; // percentage of added lines karma given to PR commenters
-const ORG_NAME = 'optimizely';
-const TEAM_NAMES = 'Frontend,ui-engineers'; // team names to do karma analysis for
+const KARMA_PERCENT_PER_COMMENT = 25; // percentage of added lines karma given to PR commenters
 const DAYS_TO_SEARCH = 30;
 
 const colors = {
@@ -54,19 +55,36 @@ function displayConsoleReport(karmaReportArrays) {
   console.log(horizontalRule);
 }
 
+// perform basic validation to ensure the appropriate environment vars are populated
+let validationFailure = false;
 if (!process.env.GITHUB_ACCESS_TOKEN) {
-  console.log('You must populate a github personal access token in the GITHUB_ACCESS_TOKEN env variable in order to use this script.');
+  console.log(`You must populate a github personal access token in the ${withColor('GITHUB_ACCESS_TOKEN', 'cyan')} env variable in order to use this script.`);
+  validationFailure = true;
+}
+
+if (!process.env.GITHUB_ORG) {
+  console.log(`You must populate a github organization name in the ${withColor('GITHUB_ORG', 'cyan')} env variable in order to use this script.`);
+  validationFailure = true;
+}
+
+if (!process.env.GITHUB_TEAMS) {
+  console.log(`You must populate one or more comma-separated github team names in the ${withColor('GITHUB_TEAMS', 'cyan')} env variable in order to use this script.`);
+  validationFailure = true;
+}
+if (validationFailure) {
   process.exit(1);
 }
 
-console.log(`Calculating Code Review Karma report for team(s): ${withColor(TEAM_NAMES.split(',').join(', '), 'cyan')} in the ${withColor(ORG_NAME, 'cyan')} org ...`)
+const teams = withColor(process.env.GITHUB_TEAMS.split(',').join(', '), 'cyan');
+const organization = withColor(process.env.GITHUB_ORG, 'cyan');
+console.log(`Calculating Code Review Karma report for team(s): ${teams} in the ${organization} github org ...`)
 
 // kick off the main function to fetch data from github and generate the code review karma report
 fetchGithubDataAndBuildReport({
   githubAccessToken: process.env.GITHUB_ACCESS_TOKEN,
   logger: console.log,
-  githubOrg: ORG_NAME,
-  githubTeams: TEAM_NAMES,
+  githubOrg: process.env.GITHUB_ORG,
+  githubTeams: process.env.GITHUB_TEAMS,
   daysToSearch: DAYS_TO_SEARCH,
   karmaPerReview: KARMA_PER_REVIEW,
   karmaPercentPerComment: KARMA_PERCENT_PER_COMMENT,

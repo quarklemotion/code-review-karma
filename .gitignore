@@ -62,3 +62,4 @@ typings/
 
 # serverless deploys
 .serverless
+env.yml

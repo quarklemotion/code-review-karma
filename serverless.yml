@@ -1,0 +1,19 @@
+service: code-review-karma
+provider:
+  name: aws
+  runtime: nodejs8.10
+  region: us-west-1
+  profile: serverless-agent
+functions:
+  authorization:
+    handler: src/handlers.authorization
+    events:
+      - http:
+          method: get
+          path: slack/authorization
+  report:
+    handler: src/handlers.report
+    events:
+      - http:
+          method: post
+          path: slack/report

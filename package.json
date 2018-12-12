@@ -10,6 +10,9 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@octokit/rest": "^16.1.0"
+    "@octokit/rest": "^16.1.0",
+    "request": "^2.88.0",
+    "request-promise": "^4.2.2",
+    "serverless": "^1.34.1"
   }
 }

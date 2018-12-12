@@ -4,6 +4,7 @@ provider:
   runtime: nodejs8.10
   region: us-west-1
   profile: serverless-agent
+  environment: ${file(env.yml)}
 functions:
   authorization:
     handler: src/handlers.authorization

@@ -3,6 +3,7 @@ provider:
   name: aws
   runtime: nodejs8.10
   region: us-west-1
+  timeout: 30
   profile: serverless-agent
   environment: ${file(env.yml)}
 functions:

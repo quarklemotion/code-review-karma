@@ -1,4 +1,4 @@
-module.exports = function displayConsoleReport([karmaReportArrays, statistics], daysToReport) {
+module.exports = ([karmaReportArrays, statistics], daysToReport) => {
   const teams = process.env.GITHUB_TEAMS.split(',').join(', ')
   const organization = process.env.GITHUB_ORG
 

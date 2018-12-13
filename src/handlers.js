@@ -31,35 +31,43 @@ module.exports.authorization = (event, context, callback) => {
 
 module.exports.report = (event, context, callback) => {
   // Confirm message was received
-  callback(null, {
-    statusCode: 200,
-    body: JSON.stringify({
-      text: 'Generating the karma report...'
-    }),
-  })
+  let promise = new Promise (resolve => {
+    callback(null, {
+      statusCode: 200,
+      body: {
+        text: 'Generating the karma report...'
+      },
+    })
 
-  // Parse the urlencoded body for the response_url
-  const payload = decodeURIComponent(event.body)
-    .split('&')
-    .map(field => field.split('='))
-    .reduce((index, pair) => {
-      index[pair[0]] = pair[1]
-      return index
-    }, {})
+    // Parse the urlencoded body for the response_url
+    const payload = decodeURIComponent(event.body)
+      .split('&')
+      .map(field => field.split('='))
+      .reduce((index, pair) => {
+        index[pair[0]] = pair[1]
+        return index
+      }, {})
+    resolve(payload)
+  })
 
   const KARMA_PER_REVIEW = 50
   const KARMA_PERCENT_PER_COMMENT = 25
   const DAYS_TO_REPORT = 30
-
-  fetchGithubDataAndBuildReport({
-    githubAccessToken: process.env.GITHUB_ACCESS_TOKEN,
-    logger: () => {},
-    githubOrg: process.env.GITHUB_ORG,
-    githubTeams: process.env.GITHUB_TEAMS,
-    daysToReport: DAYS_TO_REPORT,
-    karmaPerReview: KARMA_PER_REVIEW,
-    karmaPercentPerComment: KARMA_PERCENT_PER_COMMENT,
-  }).then(response => {
+  promise.then(payload => {
+      return Promise.all([
+        fetchGithubDataAndBuildReport({
+          githubAccessToken: process.env.GITHUB_ACCESS_TOKEN,
+          logger: () => {},
+          githubOrg: process.env.GITHUB_ORG,
+          githubTeams: process.env.GITHUB_TEAMS,
+          daysToReport: DAYS_TO_REPORT,
+          karmaPerReview: KARMA_PER_REVIEW,
+          karmaPercentPerComment: KARMA_PERCENT_PER_COMMENT,
+        }),
+        payload
+      ])
+    })
+  .then(([response, payload]) => {
     const text = formatReportForSlack(response, DAYS_TO_REPORT)
     return request({
       method: 'POST',
@@ -68,7 +76,10 @@ module.exports.report = (event, context, callback) => {
       },
       uri: payload.response_url,
       json: true,
-      body: { text },
+      body: {
+        "response_type": "in_channel",
+        "text": text,
+      },
     })
   })
   .then(() => {

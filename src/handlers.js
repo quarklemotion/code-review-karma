@@ -2,6 +2,7 @@ const authorizer = require('./authorizer')
 const request = require('request-promise')
 const fetchGithubDataAndBuildReport = require('./fetchGithubDataAndBuildReport')
 const formatReportForSlack = require('./formatReportForSlack')
+const parseSlackPayload = require('./parseSlackPayload')
 
 module.exports.authorization = (event, context, callback) => {
   const { code } = event.queryStringParameters
@@ -33,18 +34,8 @@ module.exports.report = (event, context, callback) => {
   // Confirm message was received
   callback(null, { statusCode: 200 })
 
-  // Parse the urlencoded body for the response_url
-  const payload = decodeURIComponent(event.body)
-    .split('&')
-    .map(field => field.split('='))
-    .reduce((index, pair) => {
-      index[pair[0]] = pair[1]
-      return index
-    }, {})
-
-  const KARMA_PER_REVIEW = 50
-  const KARMA_PERCENT_PER_COMMENT = 25
-  const DAYS_TO_REPORT = 30
+  // Parse response from Slack and add defaults
+  const payload = parseSlackPayload(event.body)
 
   request({
     method: 'POST',
@@ -64,17 +55,17 @@ module.exports.report = (event, context, callback) => {
       fetchGithubDataAndBuildReport({
         githubAccessToken: process.env.GITHUB_ACCESS_TOKEN,
         logger: () => {},
-        githubOrg: process.env.GITHUB_ORG,
-        githubTeams: process.env.GITHUB_TEAMS,
-        daysToReport: DAYS_TO_REPORT,
-        karmaPerReview: KARMA_PER_REVIEW,
-        karmaPercentPerComment: KARMA_PERCENT_PER_COMMENT,
+        githubOrg: payload.githubOrg,
+        githubTeams: payload.githubTeams,
+        daysToReport: payload.daysToReport,
+        karmaPerReview: payload.karmaPerReview,
+        karmaPercentPerComment: payload.karmaPercentPerComment,
       }),
       payload
     ])
   })
   .then(([response, payload]) => {
-    const text = formatReportForSlack(response, DAYS_TO_REPORT)
+    const text = formatReportForSlack(response, payload)
     return request({
       method: 'POST',
       headers: {

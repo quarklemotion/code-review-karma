@@ -1,5 +1,7 @@
 const authorizer = require('./authorizer')
 const request = require('request-promise')
+const fetchGithubDataAndBuildReport = require('./fetchGithubDataAndBuildReport')
+const formatReportForSlack = require('./formatReportForSlack')
 
 module.exports.authorization = (event, context, callback) => {
   const { code } = event.queryStringParameters
@@ -29,8 +31,12 @@ module.exports.authorization = (event, context, callback) => {
 
 module.exports.report = (event, context, callback) => {
   // Confirm message was received
-  // Also possible to notify user that karma report is being generated
-  callback(null, { statusCode: 200 })
+  callback(null, {
+    statusCode: 200,
+    body: JSON.stringify({
+      text: 'Generating the karma report...'
+    }),
+  })
 
   // Parse the urlencoded body for the response_url
   const payload = decodeURIComponent(event.body)
@@ -41,17 +47,29 @@ module.exports.report = (event, context, callback) => {
       return index
     }, {})
 
-  request({
-    method: 'POST',
-    headers: {
-      'Content-type': 'application/json'
-    },
-    uri: payload.response_url,
-    json: true,
-    body: {
-      // This is where the karma report would go
-      text: 'This message was sent later'
-    }
+  const KARMA_PER_REVIEW = 50
+  const KARMA_PERCENT_PER_COMMENT = 25
+  const DAYS_TO_REPORT = 30
+
+  fetchGithubDataAndBuildReport({
+    githubAccessToken: process.env.GITHUB_ACCESS_TOKEN,
+    logger: () => {},
+    githubOrg: process.env.GITHUB_ORG,
+    githubTeams: process.env.GITHUB_TEAMS,
+    daysToReport: DAYS_TO_REPORT,
+    karmaPerReview: KARMA_PER_REVIEW,
+    karmaPercentPerComment: KARMA_PERCENT_PER_COMMENT,
+  }).then(response => {
+    const text = formatReportForSlack(response, DAYS_TO_REPORT)
+    return request({
+      method: 'POST',
+      headers: {
+        'Content-type': 'application/json'
+      },
+      uri: payload.response_url,
+      json: true,
+      body: { text },
+    })
   })
   .then(() => {
     console.log('Request successful')

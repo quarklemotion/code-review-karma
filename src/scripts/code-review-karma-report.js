@@ -75,9 +75,13 @@ if (validationFailure) {
   process.exit(1);
 }
 
-const teams = withColor(process.env.GITHUB_TEAMS.split(',').join(', '), 'cyan');
+const teams = process.env.GITHUB_TEAMS.split(',');
+const displayTeams = withColor(teams.join(', '), 'cyan');
 const organization = withColor(process.env.GITHUB_ORG, 'cyan');
-console.log(`Calculating Code Review Karma report for team(s): ${teams} in the ${organization} github org ...`)
+console.log(
+  `Calculating Code Review Karma report for team${ teams.length > 1 ? 's' : '' }:\n` +
+  `${displayTeams} in the ${organization} github org.`
+);
 
 const daysToReport = process.env.DAYS_TO_REPORT ? Number(process.env.DAYS_TO_REPORT) : DAYS_TO_REPORT;
 
@@ -91,7 +95,7 @@ fetchGithubDataAndBuildReport({
   karmaPerReview: KARMA_PER_REVIEW,
   karmaPercentPerComment: KARMA_PERCENT_PER_COMMENT,
 }).then(([karmaReportData, statistics]) => {
-  console.log(`Code Review Karma report based on ${withColor(statistics.pullRequestCount, 'cyan')} reviewed pull requests over the past ${withColor(daysToReport, 'cyan')} days.`)
+  console.log(`Report based on ${withColor(statistics.pullRequestCount, 'cyan')} reviewed pull requests over the past ${withColor(daysToReport, 'cyan')} days.`)
   // display the karma report to the console
   displayConsoleReport(karmaReportData);
 });

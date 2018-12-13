@@ -1,6 +1,7 @@
-module.exports = ([karmaReportArrays, statistics], daysToReport) => {
-  const teams = process.env.GITHUB_TEAMS.split(',');
-  const organization = process.env.GITHUB_ORG;
+module.exports = ([karmaReportArrays, statistics], payload) => {
+  const teams = payload.githubTeams.split(',');
+  const organization = payload.githubOrg;
+  const days = payload.daysToReport
 
   const displayTeams = teams.join(', ');
   const longestReviewer = Math.max(12, ...karmaReportArrays.map(karmaScore => karmaScore[0].length));
@@ -9,7 +10,7 @@ module.exports = ([karmaReportArrays, statistics], daysToReport) => {
 
   const title = `Code Review Karma report for team${ teams.length > 1 ? 's' : '' }:\n` +
     `*${displayTeams}* in the *${organization}* github org.\n`
-  const subtitle = `Report based on *${statistics.pullRequestCount}* reviewed pull requests over the past *${daysToReport}* days:\n`
+  const subtitle = `Report based on *${statistics.pullRequestCount}* reviewed pull requests over the past *${days}* days:\n`
 
   const report = "\n" +
     title +

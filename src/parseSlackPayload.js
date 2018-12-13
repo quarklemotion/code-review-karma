@@ -4,7 +4,8 @@ module.exports = function (slackResponseBody) {
     .map(field => field.split('='))
     .reduce((index, pair) => {
       if (pair[0] === 'text') { // Any text after slash command
-        const config = pair[1].replace(/[+]/g, '') // Spaces are converted to '+'
+        index['raw_text'] = pair[1].replace(/[+]/g, ' ') // Spaces are converted to '+'
+        const config = pair[1].replace(/[+]/g, '')
           .split(/[-]{2}/g)
           .slice(1) // Remove empty string created from split
           .map(entry => entry.split(':'))

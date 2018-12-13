@@ -46,8 +46,8 @@ module.exports.report = (event, context, callback) => {
     json: true,
     statusCode: 200,
     body: {
-      "response_type": "in_channel",
-      "text": 'Generating karma report...',
+      'response_type': 'in_channel',
+      'text': `Generating report via:\n\`${payload.command} ${payload.raw_text}\``,
     },
   })
   .then(() => {

@@ -3,14 +3,16 @@ module.exports = ([karmaReportArrays, statistics], payload) => {
   const organization = payload.githubOrg;
   const days = payload.daysToReport
 
-  const displayTeams = teams.join(', ');
+  const displayTeams = teams.map(team => `\`${team}\``).join(', ');
   const longestReviewer = Math.max(12, ...karmaReportArrays.map(karmaScore => karmaScore[0].length));
   const longestScore = Math.max(...karmaReportArrays.map(karmaScore => karmaScore[1].toString().length));
   const horizontalRule = `--${''.padEnd(longestReviewer, '-')}----------------------------\n`;
 
-  const title = `Code Review Karma report for team${ teams.length > 1 ? 's' : '' }:\n` +
-    `*${displayTeams}* in the *${organization}* github org.\n`
-  const subtitle = `Report based on *${statistics.pullRequestCount}* reviewed pull requests over the past *${days}* days:\n`
+  const sbd = ':small_blue_diamond:';
+  const title = `${sbd}*Code Review Karma*${sbd} report for team${ teams.length > 1 ? 's' : '' }:\n` +
+    `*${displayTeams}* in the *\`${organization}\`* github org.\n`
+  const subtitle = `Report based on *\`${statistics.pullRequestCount}\`* reviewed pull requests over the past *\`${days}\`* days:\n`
+  const displayOmitted = statistics.omittedUsers.map(user => `*${user}*`).join(', ');
 
   const report = "\n" +
     title +
@@ -26,7 +28,8 @@ module.exports = ([karmaReportArrays, statistics], payload) => {
       return `| ${reviewerText} | ${scoreText} | ${percentText} |\n`
     }).join('') +
     horizontalRule +
-    "```\n"
+    "```\n" +
+    `Excluded from report due to no review activity :bandit:: ${displayOmitted}`;
 
   return report
 }

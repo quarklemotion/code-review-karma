@@ -79,7 +79,7 @@ const teams = process.env.GITHUB_TEAMS.split(',');
 const displayTeams = withColor(teams.join(', '), 'cyan');
 const organization = withColor(process.env.GITHUB_ORG, 'cyan');
 console.log(
-  `Calculating Code Review Karma report for team${ teams.length > 1 ? 's' : '' }:\n` +
+  `Calculating ${withColor('Code Review Karma', 'cyan')} report for team${ teams.length > 1 ? 's' : '' }:\n` +
   `${displayTeams} in the ${organization} github org.`
 );
 
@@ -98,6 +98,8 @@ fetchGithubDataAndBuildReport({
   console.log(`Report based on ${withColor(statistics.pullRequestCount, 'cyan')} reviewed pull requests over the past ${withColor(daysToReport, 'cyan')} days.`)
   // display the karma report to the console
   displayConsoleReport(karmaReportData);
+  const displayOmitted = statistics.omittedUsers.map(user => withColor(user, 'cyan')).join(', ');
+  console.log(`Excluded from report due to no review activity: ${displayOmitted}`);
 });
 
 

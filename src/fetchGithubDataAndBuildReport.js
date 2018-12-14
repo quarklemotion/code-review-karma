@@ -215,11 +215,15 @@ async function fetchGithubDataAndBuildReport({
     return karmaPerPullRequestMap;
   }));
 
+  const mergedKarmaMap = mergeKarmaScoreMaps(karmaPerPullRequestMaps);
+  const reportedUsers = Object.keys(mergedKarmaMap);
+  const omittedUsers = teamUserLogins.filter(user => !reportedUsers.includes(user));
   return [
-    generateKarmaReport(mergeKarmaScoreMaps(karmaPerPullRequestMaps)),
+    generateKarmaReport(mergedKarmaMap),
     {
       pullRequestCount,
       reviewers: teamUserLogins,
+      omittedUsers,
     }
   ];
 }

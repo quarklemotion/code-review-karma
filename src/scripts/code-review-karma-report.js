@@ -99,7 +99,9 @@ fetchGithubDataAndBuildReport({
   // display the karma report to the console
   displayConsoleReport(karmaReportData);
   const displayOmitted = statistics.omittedUsers.map(user => withColor(user, 'cyan')).join(', ');
-  console.log(`Excluded from report due to no review activity: ${displayOmitted}`);
+  if (statistics.omittedUsers.length > 0) {
+    console.log(`Excluded from report due to no review activity: ${displayOmitted}`);
+  }
 });
 
 

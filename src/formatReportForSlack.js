@@ -29,7 +29,8 @@ module.exports = ([karmaReportArrays, statistics], payload) => {
     }).join('') +
     horizontalRule +
     "```\n" +
-    `Excluded from report due to no review activity :bandit:: ${displayOmitted}`;
+    statistics.omittedUsers.length > 0 ?
+      `Excluded from report due to no review activity :bandit:: ${displayOmitted}` : '';
 
   return report
 }

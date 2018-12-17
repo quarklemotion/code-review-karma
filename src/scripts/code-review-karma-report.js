@@ -41,14 +41,13 @@ function withColor(string, color) {
  */
 function displayConsoleReport(karmaReportArrays) {
   const longestReviewer = Math.max(12, ...karmaReportArrays.map(karmaScore => karmaScore[0].length));
-  const longestScore = Math.max(...karmaReportArrays.map(karmaScore => karmaScore[1].toString().length));
   const horizontalRule = `--${''.padEnd(longestReviewer, '-')}----------------------------`;
   console.log(horizontalRule);
   console.log(`| ${withColor('Reviewer'.padEnd(longestReviewer), 'cyan')} | ${withColor('Karma Score', 'cyan')} | ${withColor('% of Avg.', 'cyan')} |`);
   console.log(horizontalRule);
   karmaReportArrays.forEach(([reviewer, karmaScore, percentOfAverage]) => {
     const reviewerText = withColor(reviewer.padEnd(longestReviewer), 'green');
-    const scoreText = withColor(karmaScore.toString().padStart(longestScore + 7), 'yellow');
+    const scoreText = withColor(karmaScore.toString().padStart(11), 'yellow');
     const percentText = withColor(percentOfAverage.toString().padStart(9), 'yellow');
     console.log(`| ${reviewerText} | ${scoreText} | ${percentText} |`);
   })

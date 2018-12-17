@@ -5,7 +5,6 @@ module.exports = ([karmaReportArrays, statistics], payload) => {
 
   const displayTeams = teams.map(team => `\`${team}\``).join(', ');
   const longestReviewer = Math.max(12, ...karmaReportArrays.map(karmaScore => karmaScore[0].length));
-  const longestScore = Math.max(...karmaReportArrays.map(karmaScore => karmaScore[1].toString().length));
   const horizontalRule = `--${''.padEnd(longestReviewer, '-')}----------------------------\n`;
 
   const sbd = ':small_blue_diamond:';
@@ -23,7 +22,7 @@ module.exports = ([karmaReportArrays, statistics], payload) => {
     horizontalRule +
     karmaReportArrays.map(([reviewer, karmaScore, percentOfAverage]) => {
       const reviewerText = reviewer.padEnd(longestReviewer)
-      const scoreText = karmaScore.toString().padStart(longestScore + 7)
+      const scoreText = karmaScore.toString().padStart(11)
       const percentText = percentOfAverage.toString().padStart(9)
       return `| ${reviewerText} | ${scoreText} | ${percentText} |\n`
     }).join('') +
